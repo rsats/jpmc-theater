@@ -56,6 +56,28 @@ public class Theater {
 	}
 	
 	public Reservation makeCustomerReservation(Customer customer, int movieSequence, int numberOfTickets) throws InvalidMovieSequenceException {
+		
+		Showing showing = null;
+		
+		Iterator<Showing> itr = movieSchedule.iterator();
+		
+		while(itr.hasNext()) {
+			Showing s = itr.next();
+			
+			if (s.getSequenceOfTheDay() == movieSequence) {
+				showing = s;
+				break;
+			}
+		}
+		
+		if (showing != null) {
+			return new Reservation(customer, showing, numberOfTickets);
+			
+		} else {
+			throw new InvalidMovieSequenceException("Unable to find any showing for the given movie sequence " + movieSequence);
+		}
+		
+		/*
 		Showing showing;
 
 		try {
@@ -66,6 +88,7 @@ public class Theater {
 		}
 
 		return new Reservation(customer, showing, numberOfTickets);
+		*/
 	}
 
 	public void printScheduleInSimpleTextFormat() {
