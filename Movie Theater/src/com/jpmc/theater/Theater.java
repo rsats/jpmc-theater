@@ -4,9 +4,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import com.jpmc.theater.exceptions.InvalidMovieSequenceException;
 import com.jpmc.theater.exceptions.InvalidShowStartTimeException;
@@ -19,7 +19,7 @@ import com.jpmc.theater.exceptions.InvalidShowStartTimeException;
 public class Theater {
 
 	private LocalDate date;
-	private List<Showing> movieSchedule = new ArrayList<Showing>();
+	private Map<Integer, Showing> movieSchedule = new HashMap<Integer, Showing>();
 	
 	public Theater(LocalDate date) {
 		this.date = date;
@@ -27,28 +27,29 @@ public class Theater {
 
 	/**
 	 * Initialize Movie Schedule for demo purposes
+	 * @throws InvalidShowStartTimeException 
 	 */
-	public void initializeDemoMovieSchedule() {
+	public void initializeDemoMovieSchedule() throws InvalidShowStartTimeException {
+		
 		Movie spiderMan = new Movie("Spider-Man: No Way Home", "", Duration.ofMinutes(90), 12.5, true);
 		Movie turningRed = new Movie("Turning Red", "", Duration.ofMinutes(85), 11, false);
 		Movie theBatMan = new Movie("The Batman", "", Duration.ofMinutes(95), 9, false);
 		
-		movieSchedule = List.of(
-				new Showing(turningRed, 1, LocalDateTime.of(date, LocalTime.of(9, 0))),
-				new Showing(spiderMan, 2, LocalDateTime.of(date, LocalTime.of(11, 0))),
-				new Showing(theBatMan, 3, LocalDateTime.of(date, LocalTime.of(12, 50))),
-				new Showing(turningRed, 4, LocalDateTime.of(date, LocalTime.of(14, 30))),
-				new Showing(spiderMan, 5, LocalDateTime.of(date, LocalTime.of(16, 10))),
-				new Showing(theBatMan, 6, LocalDateTime.of(date, LocalTime.of(17, 50))),
-				new Showing(turningRed, 7, LocalDateTime.of(date, LocalTime.of(19, 30))),
-				new Showing(spiderMan, 8, LocalDateTime.of(date, LocalTime.of(21, 10))),
-				new Showing(theBatMan, 9, LocalDateTime.of(date, LocalTime.of(23, 0)))
-				);
+		addShowingToMovieSchedule(new Showing(turningRed, 1, LocalDateTime.of(date, LocalTime.of(9, 0))));
+		addShowingToMovieSchedule(new Showing(spiderMan, 2, LocalDateTime.of(date, LocalTime.of(11, 0))));
+		addShowingToMovieSchedule(new Showing(theBatMan, 3, LocalDateTime.of(date, LocalTime.of(12, 50))));
+		addShowingToMovieSchedule(new Showing(turningRed, 4, LocalDateTime.of(date, LocalTime.of(14, 30))));
+		addShowingToMovieSchedule(new Showing(spiderMan, 5, LocalDateTime.of(date, LocalTime.of(16, 10))));
+		addShowingToMovieSchedule(new Showing(theBatMan, 6, LocalDateTime.of(date, LocalTime.of(17, 50))));
+		addShowingToMovieSchedule(new Showing(turningRed, 7, LocalDateTime.of(date, LocalTime.of(19, 30))));
+		addShowingToMovieSchedule(new Showing(spiderMan, 8, LocalDateTime.of(date, LocalTime.of(21, 10))));
+		addShowingToMovieSchedule(new Showing(theBatMan, 9, LocalDateTime.of(date, LocalTime.of(23, 0))));
 	}
 	
 	public void addShowingToMovieSchedule(Showing showing) throws InvalidShowStartTimeException {
+		
 		if (showing.getShowStartTime().toLocalDate().isEqual(date)) {
-			movieSchedule.add(showing);
+			movieSchedule.put(showing.getSequenceOfTheDay(), showing);
 			
 		} else {
 			throw new InvalidShowStartTimeException("Invalid show start time/ date: " + showing.getShowStartTime());
@@ -57,18 +58,7 @@ public class Theater {
 	
 	public Reservation makeCustomerReservation(Customer customer, int movieSequence, int numberOfTickets) throws InvalidMovieSequenceException {
 		
-		Showing showing = null;
-		
-		Iterator<Showing> itr = movieSchedule.iterator();
-		
-		while(itr.hasNext()) {
-			Showing s = itr.next();
-			
-			if (s.getSequenceOfTheDay() == movieSequence) {
-				showing = s;
-				break;
-			}
-		}
+		Showing showing = movieSchedule.get(movieSequence);
 		
 		if (showing != null) {
 			return new Reservation(customer, showing, numberOfTickets);
@@ -76,32 +66,25 @@ public class Theater {
 		} else {
 			throw new InvalidMovieSequenceException("Unable to find any showing for the given movie sequence " + movieSequence);
 		}
-		
-		/*
-		Showing showing;
-
-		try {
-			showing = movieSchedule.get(movieSequence - 1);
-
-		} catch (Exception e) {
-			throw new InvalidMovieSequenceException("Unable to find any showing for the given movie sequence " + movieSequence);
-		}
-
-		return new Reservation(customer, showing, numberOfTickets);
-		*/
 	}
 
 	public void printScheduleInSimpleTextFormat() {
+		
 		System.out.println(date);
-
 		System.out.println("===================================================");
-		movieSchedule.forEach(s ->
-		System.out.println(s.getSequenceOfTheDay() + ": " 
-				+ s.getShowStartTime() + " " 
-				+ s.getMovie().getTitle() + " " 
-				+ humanReadableFormat(s.getMovie().getRunningTime()) 
-				+ " $" + s.getShowPrice())
-				);
+		
+		Iterator<Showing> itr = movieSchedule.values().iterator();
+		
+		while (itr.hasNext()) {
+			Showing s = itr.next();
+			
+			System.out.println(s.getSequenceOfTheDay() + ": " 
+					+ s.getShowStartTime() + " " 
+					+ s.getMovie().getTitle() + " " 
+					+ humanReadableFormat(s.getMovie().getRunningTime()) 
+					+ " $" + s.getShowPrice());
+		}
+		
 		System.out.println("===================================================");
 	}
 
@@ -125,7 +108,7 @@ public class Theater {
 		System.out.println("\"date\": \"" + date + "\",");
 		System.out.println("\"showings\": [");
 
-		Iterator<Showing> itr = movieSchedule.iterator();
+		Iterator<Showing> itr = movieSchedule.values().iterator();
 		while(itr.hasNext()) {
 			Showing s = itr.next();
 
@@ -152,13 +135,19 @@ public class Theater {
 		return date;
 	}
 
-	public List<Showing> getMovieSchedule() {
+	public Map<Integer, Showing> getMovieSchedule() {
 		return movieSchedule;
 	}
 
 	public static void main(String[] args) {
 		Theater theater = new Theater(LocalDate.now());
-		theater.initializeDemoMovieSchedule();
+		
+		try {
+			theater.initializeDemoMovieSchedule();
+			
+		} catch (InvalidShowStartTimeException e) {
+			e.printStackTrace();
+		}
 
 		theater.printScheduleInSimpleTextFormat();
 		theater.printScheduleInJSONFormat();
